@@ -565,7 +565,9 @@ jobs:
           sed -i 's|pub const RS_PUB_KEY: &str = "[^"]*";|pub const RS_PUB_KEY: \&str = "n1s+O+OeUO6jw45NyjcTOnK4SbY+6BgI68LdM6qAvNg=";|' "$CFG"
           grep -q '86.57.172.48' "$CFG" || { echo "SERVER PATCH FAILED"; exit 1; }
           grep -q 'n1s+O+OeUO6' "$CFG" || { echo "KEY PATCH FAILED"; exit 1; }
-          echo "server baked (android)"
+          sed -i 's/APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned())/APP_NAME: RwLock<String> = RwLock::new("SkelaRemote".to_owned())/' "$CFG"
+          grep -q 'SkelaRemote' "$CFG" || { echo "APP_NAME FAILED"; exit 1; }
+          echo "server baked + custom-client (android)"
           # --- Android branding: имя приложения ---
           sed -i 's/android:label="RustDesk"/android:label="Skela Remote"/' flutter/android/app/src/main/AndroidManifest.xml
           sed -i 's#<string name="app_name">RustDesk</string>#<string name="app_name">Skela Remote</string>#' flutter/android/app/src/main/res/values/strings.xml
