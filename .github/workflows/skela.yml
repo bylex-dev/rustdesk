@@ -252,6 +252,31 @@ jobs:
           grep -q '86.57.172.48' "$CFG" || { echo "SERVER PATCH FAILED"; exit 1; }
           grep -q 'n1s+O+OeUO6' "$CFG" || { echo "KEY PATCH FAILED"; exit 1; }
 
+      - name: Apply Skela Remote branding
+        shell: bash
+        run: |
+          # имя приложения (папка настроек / служба / реестр)
+          sed -i 's/APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned())/APP_NAME: RwLock<String> = RwLock::new("SkelaRemote".to_owned())/' libs/hbb_common/src/config.rs
+          # заголовок окна
+          sed -i 's/app_name = L"RustDesk"/app_name = L"Skela Remote"/' flutter/windows/runner/main.cpp
+          # свойства exe (диспетчер задач / свойства файла)
+          sed -i 's/"RustDesk Remote Desktop"/"Skela Remote"/' flutter/windows/runner/Runner.rc
+          sed -i 's/VALUE "ProductName", "RustDesk"/VALUE "ProductName", "Skela Remote"/' flutter/windows/runner/Runner.rc
+          # тёмная тема по умолчанию
+          sed -i 's/return ThemeMode.system;/return ThemeMode.dark;/' flutter/lib/common.dart
+          # видимые строки установщика (ярлыки, деинсталляция)
+          sed -i 's/RustDesk/Skela Remote/g' res/msi/Package/Language/Package.en-us.wxl
+          # иконка приложения (титул, панель задач, exe, установщик)
+          cp skela-brand/app_icon.ico flutter/windows/runner/resources/app_icon.ico
+          cp skela-brand/app_icon.ico res/icon.ico
+          echo "--- проверка брендинга ---"
+          grep -n "Skela Remote" flutter/windows/runner/main.cpp flutter/windows/runner/Runner.rc | head
+          grep -n "SkelaRemote" libs/hbb_common/src/config.rs | head -1
+          grep -q 'L"Skela Remote"' flutter/windows/runner/main.cpp || { echo "TITLE FAILED"; exit 1; }
+          grep -q 'SkelaRemote' libs/hbb_common/src/config.rs || { echo "APP_NAME FAILED"; exit 1; }
+          if grep -q 'return ThemeMode.system;' flutter/lib/common.dart; then echo "THEME NOT CHANGED"; exit 1; fi
+          echo "branding OK"
+
       - name: Build rustdesk
         run: |
           # Windows: build RustDesk
