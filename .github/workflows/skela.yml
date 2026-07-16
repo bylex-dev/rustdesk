@@ -566,6 +566,23 @@ jobs:
           grep -q '86.57.172.48' "$CFG" || { echo "SERVER PATCH FAILED"; exit 1; }
           grep -q 'n1s+O+OeUO6' "$CFG" || { echo "KEY PATCH FAILED"; exit 1; }
           echo "server baked (android)"
+          # --- Android branding: имя приложения ---
+          sed -i 's/android:label="RustDesk"/android:label="Skela Remote"/' flutter/android/app/src/main/AndroidManifest.xml
+          sed -i 's#<string name="app_name">RustDesk</string>#<string name="app_name">Skela Remote</string>#' flutter/android/app/src/main/res/values/strings.xml
+          grep -q 'Skela Remote' flutter/android/app/src/main/AndroidManifest.xml || { echo "ANDROID LABEL FAILED"; exit 1; }
+          # --- Android branding: иконки из нашего логотипа ---
+          command -v convert >/dev/null 2>&1 || sudo apt-get install -y -qq imagemagick
+          SRC=skela-brand/icon-source.png
+          declare -A LZ=( [mdpi]=48 [hdpi]=72 [xhdpi]=96 [xxhdpi]=144 [xxxhdpi]=192 )
+          declare -A FG=( [mdpi]=108 [hdpi]=162 [xhdpi]=216 [xxhdpi]=324 [xxxhdpi]=432 )
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            dir=flutter/android/app/src/main/res/mipmap-$d
+            [ -d "$dir" ] || continue
+            convert "$SRC" -resize ${LZ[$d]}x${LZ[$d]}! "$dir/ic_launcher.png"
+            convert "$SRC" -resize ${LZ[$d]}x${LZ[$d]}! "$dir/ic_launcher_round.png"
+            convert "$SRC" -resize ${FG[$d]}x${FG[$d]}! "$dir/ic_launcher_foreground.png"
+          done
+          echo "android branding OK"
 
       - name: Build rustdesk lib
         env:
