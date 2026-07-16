@@ -241,6 +241,17 @@ jobs:
         shell: bash
         run: echo "SODIUM_LIB_DIR=$VCPKG_ROOT/installed/${{ matrix.job.vcpkg-triplet }}/lib" >> "$GITHUB_ENV"
 
+      - name: Bake Skela Remote server + key into config
+        shell: bash
+        run: |
+          CFG=libs/hbb_common/src/config.rs
+          sed -i 's|pub const RENDEZVOUS_SERVERS: &\[&str\] = &\[[^]]*\];|pub const RENDEZVOUS_SERVERS: \&[\&str] = \&["86.57.172.48"];|' "$CFG"
+          sed -i 's|pub const RS_PUB_KEY: &str = "[^"]*";|pub const RS_PUB_KEY: \&str = "n1s+O+OeUO6jw45NyjcTOnK4SbY+6BgI68LdM6qAvNg=";|' "$CFG"
+          echo "--- config.rs после патча ---"
+          grep -n "RENDEZVOUS_SERVERS\|RS_PUB_KEY" "$CFG" | head
+          grep -q '86.57.172.48' "$CFG" || { echo "SERVER PATCH FAILED"; exit 1; }
+          grep -q 'n1s+O+OeUO6' "$CFG" || { echo "KEY PATCH FAILED"; exit 1; }
+
       - name: Build rustdesk
         run: |
           # Windows: build RustDesk
