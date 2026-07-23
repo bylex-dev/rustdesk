@@ -267,6 +267,18 @@ jobs:
           # иконка приложения (титул, панель задач, exe, установщик)
           cp skela-brand/app_icon.ico flutter/windows/runner/resources/app_icon.ico
           cp skela-brand/app_icon.ico res/icon.ico
+          # ФИКС УСТАНОВКИ (2026-07-23): install_me/update_me копируют rustdesk.exe, но НЕ переименовывают
+          # его в {app_name}.exe → служба SkelaRemote Service и ярлык ищут SkelaRemote.exe и падают
+          # («не удаётся найти указанный файл»). Добавляем переименование в общую copy_exe_cmd
+          # (её вызывают обе функции). rename_exe_cmd уже есть в этом же модуле.
+          sed -i 's|    let main_exe = copy_raw_cmd(src_exe, exe, path)?;|    let main_exe = copy_raw_cmd(src_exe, exe, path)?;\n    let rename_exe = rename_exe_cmd(src_exe, path)?;|' src/platform/windows.rs
+          sed -i 's|{main_exe}$|{main_exe}\n        {rename_exe}|' src/platform/windows.rs
+          # убрать подсказку «настройте собственный сервер» (у нас сервер вшит — она не нужна)
+          sed -i "s|translate('setup_server_tip')|''|" flutter/lib/desktop/pages/connection_page.dart
+          echo "--- проверка фикса установки ---"
+          grep -q 'let rename_exe = rename_exe_cmd(src_exe, path)?;' src/platform/windows.rs || { echo "RENAME LET FAILED"; exit 1; }
+          grep -q '{rename_exe}' src/platform/windows.rs || { echo "RENAME TPL FAILED"; exit 1; }
+          grep -q "translate('setup_server_tip')" flutter/lib/desktop/pages/connection_page.dart && { echo "SERVER TIP STILL PRESENT"; exit 1; } || echo "server tip removed"
           echo "--- проверка брендинга ---"
           grep -n "Skela Remote" flutter/windows/runner/main.cpp flutter/windows/runner/Runner.rc | head
           grep -n "SkelaRemote" libs/hbb_common/src/config.rs | head -1
